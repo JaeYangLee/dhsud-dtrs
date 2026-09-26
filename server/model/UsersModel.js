@@ -1,9 +1,13 @@
 const pool = require("../database/database");
 const bcrypt = require("bcrypt");
 
-const getUserById = async (user_id) => {};
+const getUserById = async (user_id) => {
+  const result = await pool.query("SELECT * FROM users WHERE user_id = $1", [
+    user_id,
+  ]);
 
-const getUserByOfficeID = async (office_id) => {};
+  return result.rows[0];
+};
 
 const createUser = async (
   first_name,
@@ -48,19 +52,19 @@ const updateUser = async (
 
   const values = [first_name, middle_name, last_name, email, role, office_id];
 
-  if (password) {
+  if (password_hash) {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password_hash, saltRounds);
 
-    query += ", password = $7 WHERE user_id = $8 RETURNING *";
+    query += ", password_hash = $7 WHERE user_id = $8 RETURNING *";
     values.push(hashedPassword, user_id);
   } else {
-    query += "WHERE user_id = $7 RETURNING *";
+    query += " WHERE user_id = $7 RETURNING *";
     values.push(user_id);
   }
 
-  const result = await pool.query(query, value);
-  return result.row[0];
+  const result = await pool.query(query, values);
+  return result.rows[0];
 };
 
 const deleteUser = async (user_id) => {
@@ -74,7 +78,6 @@ const deleteUser = async (user_id) => {
 
 module.exports = {
   getUserById,
-  getUserByOfficeID,
   createUser,
   updateUser,
   deleteUser,
