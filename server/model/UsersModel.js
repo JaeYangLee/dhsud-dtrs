@@ -9,6 +9,24 @@ const getUserById = async (user_id) => {
   return result.rows[0];
 };
 
+const getUserByEmail = async (email) => {
+  const result = await pool.query(
+    "SELECT user_id, first_name, middle_name, last_name, email, password_hash, role, office_id FROM users WHERE email = $1",
+    [email],
+  );
+
+  return result.rows[0];
+};
+
+const getUserByOfficeId = async (office_id) => {
+  const result = await pool.query(
+    "SELECT user_id, first_name, middle_name, last_name, email, role, office_id FROM users WHERE office_id = $1",
+    [office_id],
+  );
+
+  return result.rows;
+};
+
 const createUser = async (
   first_name,
   middle_name,
@@ -78,6 +96,8 @@ const deleteUser = async (user_id) => {
 
 module.exports = {
   getUserById,
+  getUserByEmail,
+  getUserByOfficeId,
   createUser,
   updateUser,
   deleteUser,
