@@ -91,11 +91,11 @@ const logInUser = async (req, res) => {
 
 const getUserByOfficeID = async (req, res) => {
   try {
-    const { office_id } = req.user;
+    const { office_id } = req.params;
 
-    const officeID = await UsersModel.getUserByOfficeId(office_id);
+    const usersInOffice = await UsersModel.getUserByOfficeId(office_id);
 
-    if (!officeID) {
+    if (!usersInOffice) {
       return res.status(404).json({
         error: "[GET /UserController.js]: Office id not found!",
       });
@@ -103,7 +103,7 @@ const getUserByOfficeID = async (req, res) => {
 
     res.status(200).json({
       message: "[GET /UserController.js]: Office id found! ",
-      data: officeID,
+      data: usersInOffice,
     });
   } catch (err) {
     console.error("[GET /UserController.js]: Error fetching office id");
