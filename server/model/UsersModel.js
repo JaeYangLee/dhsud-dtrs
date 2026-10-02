@@ -2,9 +2,10 @@ const pool = require("../database/database");
 const bcrypt = require("bcrypt");
 
 const getUserById = async (user_id) => {
-  const result = await pool.query("SELECT * FROM users WHERE user_id = $1", [
-    user_id,
-  ]);
+  const result = await pool.query(
+    "SELECT user_id, first_name, middle_name, last_name, email, role, office_id, created_at FROM users WHERE user_id = $1",
+    [user_id],
+  );
 
   return result.rows[0];
 };
@@ -65,29 +66,65 @@ const updateUser = async (
   role,
   office_id,
 ) => {
-  let query =
-    "UPDATE users SET first_name = $1, middle_name = $2, last_name = $3, email = $4, role = $5, office_id = $6";
+  const fields = [];
+  const value = [];
+  let index = 1;
 
-  const values = [first_name, middle_name, last_name, email, role, office_id];
+  if (first_name !== undefined) {
+    fields.push(`first_name = $${index}`);
+    value.push(first_name);
+    index++;
+  }
 
-  if (password_hash) {
+  if (middle_name !== undefined) {
+    fields.push(`middle_name = $${index}`);
+    value.push(middle_name);
+    index++;
+  }
+
+  if (last_name !== undefined) {
+    fields.push(`last_name = $${index}`);
+    value.push(last_name);
+    index++;
+  }
+
+  if (email !== undefined) {
+    fields.push(`email = $${index}`);
+    value.push(email);
+    index++;
+  }
+
+  if (password_hash !== undefined) {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password_hash, saltRounds);
 
-    query += ", password_hash = $7 WHERE user_id = $8 RETURNING *";
-    values.push(hashedPassword, user_id);
-  } else {
-    query += " WHERE user_id = $7 RETURNING *";
-    values.push(user_id);
+    fields.push(`password_hash = $${index}`);
+    value.push(hashedPassword);
+    index++;
   }
 
-  const result = await pool.query(query, values);
+  if (role !== undefined) {
+    fields.push(`role = $${index}`);
+    value.push(role);
+    index++;
+  }
+  if (office_id !== undefined) {
+    fields.push(`office_id = $${index}`);
+    value.push(office_id);
+    index++;
+  }
+
+  value.push(user_id);
+
+  const query = `UPDATE users SET ${fields.join(", ")} WHERE user_id = $${index} RETURNING user_id, first_name, middle_name, last_name, email, role, office_id, created_at`;
+
+  const result = await pool.query(query, value);
   return result.rows[0];
 };
 
 const deleteUser = async (user_id) => {
   const result = await pool.query(
-    "DELETE FROM users WHERE user_id = $1 RETURNING *",
+    "DELETE FROM users WHERE user_id = $1 RETURNING user_id, first_name, last_name, email",
     [user_id],
   );
 

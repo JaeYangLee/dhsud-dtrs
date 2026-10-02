@@ -89,13 +89,13 @@ const logInUser = async (req, res) => {
   }
 };
 
-const getUserByOfficeID = async (req, res) => {
+const getUsersByOfficeID = async (req, res) => {
   try {
     const { office_id } = req.params;
 
     const usersInOffice = await UsersModel.getUserByOfficeId(office_id);
 
-    if (!usersInOffice) {
+    if (!usersInOffice || usersInOffice.length === 0) {
       return res.status(404).json({
         error: "[GET /UserController.js]: Office id not found!",
       });
@@ -248,7 +248,7 @@ const deleteUser = async (req, res) => {
 module.exports = {
   getUserByID,
   logInUser,
-  getUserByOfficeID,
+  getUsersByOfficeID,
   createUser,
   updateUser,
   deleteUser,
