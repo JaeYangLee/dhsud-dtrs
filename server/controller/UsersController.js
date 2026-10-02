@@ -31,12 +31,84 @@ const getUserByID = async (req, res) => {
 
 const logInUser = async (req, res) => {
   try {
-  } catch (err) {}
+    const { email, password_hash } = req.body;
+
+    if (!email || !password_hash) {
+      return res.status(400).json({
+        message: "[POST /UserController.js]: Email and Password required!",
+      });
+    }
+
+    const userEmail = await UsersModel.getUserByEmail(email);
+
+    if (!userEmail) {
+      return res
+        .status(404)
+        .json({ message: "[POST /UserController.js]: User not found!" });
+    }
+
+    const isMatch = await bcrypt.compare(
+      password_hash,
+      userEmail.password_hash,
+    );
+
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ message: "[POST /UserController.js]: Invalid credentials!" });
+    }
+
+    const SECRET_KEY = process.env.JWT_SECRET || "superSecret123";
+    const token = jwt.sign({ user_id: userEmail.user_id }, SECRET_KEY, {
+      expiresIn: "2h",
+    });
+
+    const userResponse = {
+      user_id: userEmail.user_id,
+      first_name: userEmail.first_name,
+      last_name: userEmail.last_name,
+      email: userEmail.email,
+      role: userEmail.role,
+      office_id: userEmail.office_id,
+    };
+
+    res.status(200).json({
+      message: "[POST /UserController.js]: Log in successful!",
+      token,
+      user: userResponse,
+    });
+  } catch (err) {
+    console.error(
+      "[GET /UserController.js]: Error logging in user!",
+      err.message,
+    );
+
+    res
+      .status(500)
+      .json({ message: "[GET /UserController.js]: Server Error!" });
+  }
 };
 
 const getUserByOfficeID = async (req, res) => {
   try {
-  } catch (err) {}
+    const { office_id } = req.user;
+
+    const officeID = await UsersModel.getUserByOfficeId(office_id);
+
+    if (!officeID) {
+      return res.status(404).json({
+        error: "[GET /UserController.js]: Office id not found!",
+      });
+    }
+
+    res.status(200).json({
+      message: "[GET /UserController.js]: Office id found! ",
+      data: officeID,
+    });
+  } catch (err) {
+    console.error("[GET /UserController.js]: Error fetching office id");
+    res.status(500).json({ error: "[GET /UserController.js]: Server Error!" });
+  }
 };
 
 const createUser = async (req, res) => {
