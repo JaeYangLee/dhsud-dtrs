@@ -1,7 +1,6 @@
-const pkg = requite("pg");
+const pkg = require("pg");
 const dotenv = require("dotenv");
 
-dotenv.config();
 const { Pool } = pkg;
 
 const pool = new Pool({
