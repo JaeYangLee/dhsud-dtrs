@@ -18,7 +18,7 @@ const getRoutingSlipById = async (routing_slip_id) => {
 const getRoutingSlipsByOffice = async (current_office_id) => {
   const result = await pool.query(
     "SELECT routing_slip_id, routing_slip_number, subject, current_status, current_office_id, created_by, created_at FROM routing_slips WHERE current_office_id = $1",
-    [office_id],
+    [current_office_id],
   );
 
   return result.rows;
@@ -49,9 +49,11 @@ const updateRoutingSlipStatus = async (routing_slip_id, current_status) => {
 
 const deleteRoutingSlip = async (routing_slip_id) => {
   const result = await pool.query(
-    "DELETE FROM routing_slips WHERE routing_slip_id = $1 RETURNING routing_slip_number, subject,",
+    "DELETE FROM routing_slips WHERE routing_slip_id = $1 RETURNING routing_slip_id, routing_slip_number, subject",
     [routing_slip_id],
   );
+
+  return result.rows[0];
 };
 
 module.exports = {
