@@ -2,15 +2,15 @@ const RoutingSlipsModel = require("../model/RoutingSlipsModel");
 
 const getAllRoutingSlips = async (req, res) => {
   try {
-    const allRoutingSlips = await RoutingSlipsModel.getAllRoutingSlips();
-
     if (req.user.role !== "admin") {
       return res.status(403).json({
         error: "[GET /RoutingSlipsController.js]: Unauthorized!",
       });
     }
 
-    if (!allRoutingSlips || allRoutingSlips.length === 0) {
+    const allRoutingSlips = await RoutingSlipsModel.getAllRoutingSlips();
+
+    if (!allRoutingSlips) {
       return res.status(404).json({
         error: "[GET /RoutingSlipsController.js]: No routing slips found!",
       });
@@ -39,9 +39,19 @@ const getRoutingSlipById = async (req, res) => {
     const routingSlipsById =
       await RoutingSlipsModel.getRoutingSlipById(routing_slip_id);
 
-    if (!routingSlipsById || routingSlipsById.length === 0) {
+    if (!routingSlipsById) {
       return res.status(404).json({
         error: "[GET /RoutingSlipsController.js]: No routing slips found!",
+      });
+    }
+
+    const isAdmin = req.user.role === "admin";
+    const isHolder = routingSlipsById.current_office_id === req.user.office_id;
+    const isCreator = routingSlipsById.created_by === req.user.user_id;
+
+    if (!isAdmin && !isHolder && !isCreator) {
+      return res.status(403).json({
+        error: "[GET /RoutingSlipsController.js]: Unauthorized!",
       });
     }
 
@@ -62,11 +72,20 @@ const getRoutingSlipsByOffice = async (req, res) => {
   try {
     const { current_office_id } = req.params;
 
+    if (
+      req.user.role !== "admin" &&
+      req.user.office_id !== parseInt(current_office_id)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "[GET /RoutingSlipsController.js]: Unauthorized!" });
+    }
+
     const routingSlipsByOffice =
       await RoutingSlipsModel.getRoutingSlipsByOffice(current_office_id);
 
     if (!routingSlipsByOffice || routingSlipsByOffice.length === 0) {
-      return res.status(400).json({
+      return res.status(404).json({
         error:
           "[GET /RoutingSlipsController.js]: No routing slips found by office!",
       });
@@ -88,30 +107,25 @@ const getRoutingSlipsByOffice = async (req, res) => {
   }
 };
 
-const createRoutingSlip = async () => {
+const createRoutingSlip = async (req, res) => {
   try {
-    const { routing_slip_number, subject, current_office_id, created_by } =
-      req.body;
+    const created_by = req.user.user_id;
+    const current_office_id = req.user.office_id;
+    const { subject } = req.body;
 
-    const newRoutingSlip = await RoutingSlipsModel.createRoutingSlip(
-      routing_slip_number,
-      subject,
-      current_office_id,
-      created_by,
-    );
-
-    if (
-      !routing_slip_number.trim() ||
-      !subject.trim() ||
-      !current_office_id.trim() ||
-      created_by.trim()
-    ) {
+    if (!subject || !subject.trim()) {
       return res.status(400).json({
         error: "[POST /RoutingSlipsController.js]: Missing fields required!",
       });
     }
 
-    res.status(200).json({
+    const newRoutingSlip = await RoutingSlipsModel.createRoutingSlip(
+      subject.trim(),
+      current_office_id,
+      created_by,
+    );
+
+    res.status(201).json({
       message:
         "[POST /RoutingSlipsController.js]: Creating new routing slip successful!",
       data: newRoutingSlip,
