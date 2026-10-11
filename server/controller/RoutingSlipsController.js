@@ -147,6 +147,30 @@ const updateRoutingSlipStatus = async (req, res) => {
     const { routing_slip_id } = req.params;
     const { current_status } = req.body;
 
+    if (!current_status) {
+      return res.status(400).json({
+        error: "[PUT /RoutingSlipsController.js]: Status is required!",
+      });
+    }
+
+    const routingSlip =
+      await RoutingSlipsModel.getRoutingSlipById(routing_slip_id);
+
+    if (!routingSlip) {
+      return res.status(404).json({
+        error: "[PUT /RoutingSlipsController.js]: Routing slip not found!",
+      });
+    }
+
+    const isAdmin = req.user.role === "admin";
+    const isHolder = routingSlip.current_office_id === req.user.office_id;
+
+    if (!isAdmin && !isHolder) {
+      return res.status(403).json({
+        error: "[PUT /RoutingSlipsController.js]: Unauthorized!",
+      });
+    }
+
     const updatedRoutingSlipStatus =
       await RoutingSlipsModel.updateRoutingSlipStatus(
         routing_slip_id,
@@ -165,10 +189,17 @@ const updateRoutingSlipStatus = async (req, res) => {
       data: updatedRoutingSlipStatus,
     });
   } catch (err) {
+    if (err.code === "23503") {
+      return res.status(400).json({
+        error: "[PUT /RoutingSlipsController.js]: Invalid status!",
+      });
+    }
+
     console.error(
       "[PUT /RoutingSlipsController.js]: Error updating routing slip status!",
       err.message,
     );
+
     res
       .status(500)
       .json({ message: "[PUT /RoutingSlipsController.js]: Server Error!" });
@@ -176,8 +207,38 @@ const updateRoutingSlipStatus = async (req, res) => {
 };
 
 const deleteRoutingSlip = async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({
+      error: "[DELETE /RoutingSlipsController.js]: Unauthorized!",
+    });
+  }
   try {
-  } catch (err) {}
+    const { routing_slip_id } = req.params;
+
+    const deletedRoutingSlip =
+      await RoutingSlipsModel.deleteRoutingSlip(routing_slip_id);
+
+    if (!deletedRoutingSlip) {
+      return res.status(404).json({
+        error: "[DELETE /RoutingSlipsController.js]: Routing slip not found!",
+      });
+    }
+
+    res.status(200).json({
+      message:
+        "[DELETE /RoutingSlipsController.js]: Routing slip deleted successfully!",
+      data: deletedRoutingSlip,
+    });
+  } catch (err) {
+    console.error(
+      "[DELETE /RoutingSlipsController.js]: Error deleting routing slip!",
+      err.message,
+    );
+
+    res.status(500).json({
+      message: "[DELETE /RoutingSlipsController.js]: Server error!",
+    });
+  }
 };
 
 module.exports = {
