@@ -1,3 +1,4 @@
+const { error } = require("node:console");
 const RoutingSlipsModel = require("../model/RoutingSlipsModel");
 
 const getAllRoutingSlips = async (req, res) => {
@@ -103,7 +104,7 @@ const getRoutingSlipsByOffice = async (req, res) => {
     );
     res
       .status(500)
-      .json({ message: "[POST /RoutingSlipsController.js]: Server error!" });
+      .json({ message: "[GET /RoutingSlipsController.js]: Server error!" });
   }
 };
 
@@ -143,7 +144,35 @@ const createRoutingSlip = async (req, res) => {
 
 const updateRoutingSlipStatus = async (req, res) => {
   try {
-  } catch (err) {}
+    const { routing_slip_id } = req.params;
+    const { current_status } = req.body;
+
+    const updatedRoutingSlipStatus =
+      await RoutingSlipsModel.updateRoutingSlipStatus(
+        routing_slip_id,
+        current_status,
+      );
+
+    if (!updatedRoutingSlipStatus) {
+      return res.status(404).json({
+        error: "[PUT /RoutingSlipsController.js]: Routing slip not found!",
+      });
+    }
+
+    res.status(200).json({
+      message:
+        "[PUT /RoutingSlipsController.js]: Updating routing slip status successful!",
+      data: updatedRoutingSlipStatus,
+    });
+  } catch (err) {
+    console.error(
+      "[PUT /RoutingSlipsController.js]: Error updating routing slip status!",
+      err.message,
+    );
+    res
+      .status(500)
+      .json({ message: "[PUT /RoutingSlipsController.js]: Server Error!" });
+  }
 };
 
 const deleteRoutingSlip = async (req, res) => {
